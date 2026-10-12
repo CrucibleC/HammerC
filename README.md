@@ -1,6 +1,6 @@
 [Part of The Crucible C Project.](https://github.com/CrucibleC/CrucibleC)
 
-# HammerC
+# HammerC V1.0.0
 
 A tiny test system for C. It has one header and one Python script, and every part of it is meant to be read.
 
