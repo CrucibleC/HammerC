@@ -1,0 +1,2 @@
+exit: 2
+<runner>: no test named 'test_does_not_exist'

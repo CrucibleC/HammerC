@@ -1,0 +1,4 @@
+exit: 0
+usage: <runner> [--verbose] [test_name]
+  -v, --verbose  print every check, not only the failed ones
+  test_name      run only this test, e.g. test_add_small_numbers

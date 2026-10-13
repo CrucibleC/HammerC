@@ -1,0 +1,6 @@
+exit: 0
+hammerc.py: 17 tests in 3 files -> checks/generated/hammer_tests.h (written)
+hammerc.py: checks/generated/hammer_main.c (written)
+exit: 0
+hammerc.py: 17 tests in 3 files -> checks/generated/hammer_tests.h (unchanged)
+hammerc.py: checks/generated/hammer_main.c (unchanged)

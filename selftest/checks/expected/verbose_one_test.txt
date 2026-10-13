@@ -1,0 +1,15 @@
+exit: 0
+RUN  test_check_passes (check_require.test.c)
+     PASSED:   CHECK(1 + 1 == 2)
+     AT:       checks/check_require.test.c:12
+     PASSED:   CHECK(10 % 3 == 1)
+     AT:       checks/check_require.test.c:13
+     2/2 checks passed
+
+TESTS:   1
+SUCCESS: 1
+FAILED:  0
+
+CHECKS:  2
+SUCCESS: 2
+FAILED:  0

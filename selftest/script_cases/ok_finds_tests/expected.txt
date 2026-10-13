@@ -1,0 +1,8 @@
+exit: 0
+hammerc.py: 5 tests in 3 files -> script_cases/ok_finds_tests/generated/hammer_tests.h (written)
+hammerc.py: script_cases/ok_finds_tests/generated/hammer_main.c (written)
+registered: test_first (a.test.c)
+registered: test_brace_on_next_line (a.test.c)
+registered: test_last (a.test.c)
+registered: test_in_latin1_file (latin1.test.c)
+registered: test_in_subfolder (sub/b.test.c)

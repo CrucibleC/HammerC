@@ -174,8 +174,9 @@ static inline int hammer_run(const HammerTest *tests, int count, HammerPrintFn p
 
         hammer_printf(print, "RUN  %s (%s)\n", t.test_name, t.test_file);
         tests[i].fn(&t);
-        hammer_printf(print, "     %d/%d checks passed\n\n",
+        hammer_printf(print, "     %d/%d checks passed\n",
                       t.test.checks - t.test.failures, t.test.checks);
+        hammer_printf(print, "\n");
 
         t.run.checks += t.test.checks;
         t.run.failures += t.test.failures;

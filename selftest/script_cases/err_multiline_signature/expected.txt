@@ -1,0 +1,3 @@
+exit: 1
+script_cases/err_multiline_signature/a.test.c:4: error: test 'test_split_parameters' must have its signature on one line: void test_split_parameters(HammerCtx *t)
+script_cases/err_multiline_signature/a.test.c:10: error: test 'test_split_return_type' must have its signature on one line: void test_split_return_type(HammerCtx *t)

@@ -2,6 +2,8 @@
 
 # HammerC V1.0.0
 
+[![selftest](https://github.com/CrucibleC/HammerC/actions/workflows/selftest.yml/badge.svg)](https://github.com/CrucibleC/HammerC/actions/workflows/selftest.yml)
+
 A tiny test system for C. It has one header and one Python script, and every part of it is meant to be read.
 
 - `hammerc.h` holds the types, the check macros and the runner. All functions are `static inline`, so there is nothing to link.
@@ -227,6 +229,24 @@ Because the script doesn't run the preprocessor:
 
 - **Functions created by macros are invisible to the script.** Write tests out in full.
 - **`#if` / `#ifdef` are ignored.** A test inside `#if 0` is still put in the table, and the build then fails with an undefined reference to it. To switch a test off, comment it out or delete it.
+
+## Testing HammerC itself
+
+`selftest/` holds the tests of HammerC itself, separate from the example:
+
+```
+python selftest/run_selftest.py --cc gcc      # or clang, or cl (MSVC)
+```
+
+- **`selftest/script_cases/`** has one folder per `hammerc.py` rule. Each holds `.test.c` files and an `expected.txt` with the script's exit code, its output and the tests it put in the table.
+- **`selftest/checks/`** is a suite that runs every check macro, passing and failing. It is run with no arguments, with `--verbose`, with one test name, and with bad arguments.
+- **`selftest/custom_print/`** has its own `main` (`--nomain`) and a print function that stores every line. It checks that each call gets exactly one complete line, and it is built with `-DHAMMER_LINE_MAX=64` so long lines are cut.
+
+Each run's output is compared with a file in an `expected/` folder, and any difference is printed as a diff. The runner's own path is shown as `<runner>`, and backslashes are turned into `/`, so the same files work on Linux and Windows. Failing pointer checks print addresses, which change every run, so `custom_print` hides them.
+
+After an intended change to the output, run with `--update` to rewrite the expected files, then read `git diff selftest` before committing.
+
+The [selftest workflow](.github/workflows/selftest.yml) runs this on every push and pull request, with gcc and clang on Linux and MSVC on Windows. Warnings are treated as errors.
 
 ## Requirements
 

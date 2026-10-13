@@ -1,0 +1,5 @@
+exit: 0
+hammerc.py: 2 tests in 1 files -> script_cases/ok_if0_still_registered/generated/hammer_tests.h (written)
+hammerc.py: script_cases/ok_if0_still_registered/generated/hammer_main.c (written)
+registered: test_inside_if0 (a.test.c)
+registered: test_outside (a.test.c)

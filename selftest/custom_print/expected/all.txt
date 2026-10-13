@@ -1,0 +1,28 @@
+exit: 0
+run_all_tests_with returned 2
+lines: 24, bad lines: 0
+--- stored lines, with pointer values hidden ---
+RUN  test_passing (print.test.c)
+     1/1 checks passed
+
+RUN  test_long_line_is_cut (print.test.c)
+     FAILED:   CHECK_EQ_STR("this string is long enough to go 
+     AT:       custom_print/print.test.c:11
+     EXPECTED: "short"
+     ACTUAL:   "this string is long enough to go past the 64 b
+     0/1 checks passed
+
+RUN  test_require_eq_ptr_fails_and_stops (print.test.c)
+     FAILED:   REQUIRE_EQ_PTR(&a, &b)
+     AT:       custom_print/print.test.c:19
+     EXPECTED: <pointer>
+     ACTUAL:   <pointer>
+     0/1 checks passed
+
+TESTS:   3
+SUCCESS: 1
+FAILED:  2
+
+CHECKS:  3
+SUCCESS: 1
+FAILED:  2

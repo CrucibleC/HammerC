@@ -1,0 +1,13 @@
+exit: 1
+RUN  test_check_fails_and_continues (check_require.test.c)
+     FAILED:   CHECK(1 + 1 == 3)
+     AT:       checks/check_require.test.c:18
+     1/2 checks passed
+
+TESTS:   1
+SUCCESS: 0
+FAILED:  1
+
+CHECKS:  2
+SUCCESS: 1
+FAILED:  1

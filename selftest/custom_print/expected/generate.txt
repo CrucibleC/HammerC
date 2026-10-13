@@ -1,0 +1,6 @@
+exit: 0
+hammerc.py: 3 tests in 1 files -> custom_print/generated/hammer_tests.h (written)
+hammerc.py: custom_print/generated/hammer_main.c (written)
+exit: 0
+hammerc.py: 3 tests in 1 files -> custom_print/generated/hammer_tests.h (unchanged)
+hammerc.py: removed custom_print/generated/hammer_main.c (--nomain)

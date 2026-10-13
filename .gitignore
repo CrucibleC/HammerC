@@ -2,3 +2,4 @@ CMakeLists.txt
 build.py
 build/
 __pycache__/
+selftest/**/generated/

@@ -1,0 +1,2 @@
+exit: 1
+script_cases/err_no_tests: error: no tests found in any .test.c file

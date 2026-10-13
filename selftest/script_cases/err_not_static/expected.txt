@@ -1,0 +1,6 @@
+exit: 1
+script_cases/err_not_static/a.test.c:4: error: 'helper' is not static, so it must be a test written as 'void test_<name>(HammerCtx *t)'. Make helpers static.
+script_cases/err_not_static/a.test.c:6: error: 'test_wrong_parameter_name' is not static, so it must be a test written as 'void test_<name>(HammerCtx *t)'. Make helpers static.
+script_cases/err_not_static/a.test.c:8: error: 'test_returns_int' is not static, so it must be a test written as 'void test_<name>(HammerCtx *t)'. Make helpers static.
+script_cases/err_not_static/a.test.c:10: error: 'declspec_helper' is not static, so it must be a test written as 'void test_<name>(HammerCtx *t)'. Make helpers static.
+script_cases/err_not_static/a.test.c:12: error: 'main' is not static, so it must be a test written as 'void test_<name>(HammerCtx *t)'. Make helpers static.

@@ -1,0 +1,37 @@
+# Runs HammerC's own tests (selftest/run_selftest.py) on Linux and Windows.
+# Each job generates the self-test suites with hammerc.py, compiles them with
+# warnings as errors, runs them, and compares the output with the expected
+# files in selftest/.
+name: selftest
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  selftest:
+    name: ${{ matrix.os }} / ${{ matrix.cc }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cc: gcc
+          - os: ubuntu-latest
+            cc: clang
+          - os: windows-latest
+            cc: cl
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      # Puts MSVC's cl.exe on the PATH.
+      - if: matrix.cc == 'cl'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - run: python selftest/run_selftest.py --cc ${{ matrix.cc }}

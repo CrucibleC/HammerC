@@ -1,0 +1,105 @@
+exit: 1
+RUN  test_check_passes (check_require.test.c)
+     2/2 checks passed
+
+RUN  test_check_fails_and_continues (check_require.test.c)
+     FAILED:   CHECK(1 + 1 == 3)
+     AT:       checks/check_require.test.c:18
+     1/2 checks passed
+
+RUN  test_require_passes (check_require.test.c)
+     2/2 checks passed
+
+RUN  test_require_fails_and_stops (check_require.test.c)
+     FAILED:   REQUIRE(0)
+     AT:       checks/check_require.test.c:30
+     0/1 checks passed
+
+RUN  test_require_in_helper_only_leaves_helper (check_require.test.c)
+     FAILED:   REQUIRE(1 == 2)
+     AT:       checks/check_require.test.c:6
+     2/3 checks passed
+
+RUN  test_no_checks (check_require.test.c)
+     0/0 checks passed
+
+RUN  test_eq_int_passes (eq_numbers.test.c)
+     3/3 checks passed
+
+RUN  test_eq_int_fails_prints_values (eq_numbers.test.c)
+     FAILED:   CHECK_EQ_INT(-1, 1)
+     AT:       checks/eq_numbers.test.c:14
+     EXPECTED: 1
+     ACTUAL:   -1
+     FAILED:   CHECK_EQ_INT(LLONG_MAX, LLONG_MIN)
+     AT:       checks/eq_numbers.test.c:15
+     EXPECTED: -9223372036854775808
+     ACTUAL:   9223372036854775807
+     0/2 checks passed
+
+RUN  test_require_eq_int_stops (eq_numbers.test.c)
+     FAILED:   REQUIRE_EQ_INT(2, 3)
+     AT:       checks/eq_numbers.test.c:20
+     EXPECTED: 3
+     ACTUAL:   2
+     0/1 checks passed
+
+RUN  test_eq_uint_passes (eq_numbers.test.c)
+     2/2 checks passed
+
+RUN  test_eq_uint_fails_prints_values (eq_numbers.test.c)
+     FAILED:   CHECK_EQ_UINT(ULLONG_MAX, 0u)
+     AT:       checks/eq_numbers.test.c:32
+     EXPECTED: 0
+     ACTUAL:   18446744073709551615
+     0/1 checks passed
+
+RUN  test_require_eq_uint_stops (eq_numbers.test.c)
+     FAILED:   REQUIRE_EQ_UINT(1u, 2u)
+     AT:       checks/eq_numbers.test.c:37
+     EXPECTED: 2
+     ACTUAL:   1
+     0/1 checks passed
+
+RUN  test_arguments_evaluated_once (eq_numbers.test.c)
+     2/2 checks passed
+
+RUN  test_eq_str_passes (eq_str_ptr.test.c)
+     3/3 checks passed
+
+RUN  test_eq_str_fails_prints_values (eq_str_ptr.test.c)
+     FAILED:   CHECK_EQ_STR("abc", "abd")
+     AT:       checks/eq_str_ptr.test.c:15
+     EXPECTED: "abd"
+     ACTUAL:   "abc"
+     FAILED:   CHECK_EQ_STR(NULL, "abc")
+     AT:       checks/eq_str_ptr.test.c:16
+     EXPECTED: "abc"
+     ACTUAL:   NULL
+     FAILED:   CHECK_EQ_STR("abc", NULL)
+     AT:       checks/eq_str_ptr.test.c:17
+     EXPECTED: NULL
+     ACTUAL:   "abc"
+     FAILED:   CHECK_EQ_STR("100%", "%d")
+     AT:       checks/eq_str_ptr.test.c:18
+     EXPECTED: "%d"
+     ACTUAL:   "100%"
+     0/4 checks passed
+
+RUN  test_require_eq_str_stops (eq_str_ptr.test.c)
+     FAILED:   REQUIRE_EQ_STR("a", "b")
+     AT:       checks/eq_str_ptr.test.c:23
+     EXPECTED: "b"
+     ACTUAL:   "a"
+     0/1 checks passed
+
+RUN  test_eq_ptr_passes (eq_str_ptr.test.c)
+     4/4 checks passed
+
+TESTS:   17
+SUCCESS: 8
+FAILED:  9
+
+CHECKS:  34
+SUCCESS: 21
+FAILED:  13

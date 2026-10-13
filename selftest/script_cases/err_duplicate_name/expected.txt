@@ -1,0 +1,3 @@
+exit: 1
+script_cases/err_duplicate_name/a.test.c:8: error: test 'test_twice_in_this_file' is already defined at script_cases/err_duplicate_name/a.test.c:6
+script_cases/err_duplicate_name/sub/b.test.c:3: error: test 'test_same' is already defined at script_cases/err_duplicate_name/a.test.c:4

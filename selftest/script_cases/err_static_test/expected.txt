@@ -1,0 +1,3 @@
+exit: 1
+script_cases/err_static_test/a.test.c:4: error: test 'test_static' must not be static, or it is never run: void test_static(HammerCtx *t)
+script_cases/err_static_test/a.test.c:6: error: test 'test_static_inline' must not be static, or it is never run: void test_static_inline(HammerCtx *t)
