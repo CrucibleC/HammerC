@@ -44,10 +44,12 @@ void test_clamp_stays_in_range(HammerCtx *t)          /* test */
 The rules, which `hammerc.py` enforces:
 
 - **A test** is a non-static function whose whole signature is on one line, in exactly the form `void test_<name>(HammerCtx *t)`. The opening `{` can be on the same line or the next.
-- **A helper** must be `static`.
+- **A helper** must be `static`. A test must not be, because a `static` test could never be run.
 - **Test names** must be unique across all files, because tests are global functions.
 
 The parameter must be named `t`, because the check macros use it.
+
+If you build with `-Wmissing-prototypes` (gcc and clang) or `-Wmissing-declarations` (gcc), every test gets a warning like `no previous prototype for function 'test_add_small_numbers'`. These warnings are off by default, and `-Wall -Wextra` doesn't turn them on. They fire because a test is a non-static function whose only declaration is in `generated/hammer_tests.h`, which the test file doesn't include. Nothing is wrong with the test. If your project turns these warnings on, especially together with `-Werror`, turn them off for the `.test.c` files with `-Wno-missing-prototypes` or `-Wno-missing-declarations`.
 
 ## Checks
 
@@ -143,6 +145,15 @@ RUN  test_add_small_numbers (calc.test.c)
      2/2 checks passed
 ```
 
+### Running one test
+
+```
+./example_tests test_file_extension
+./example_tests --verbose test_file_extension
+```
+
+Give a test's name to run only that test. The summary then counts just that one test. A name that matches no test prints an error and the runner exits with 2.
+
 `--help` (or `-h`) prints the usage. Any other argument prints an error and the runner exits with 2. The command line is read by `hammer_main` in `hammerc.h`, which the generated `main` calls.
 
 ## How a run works
@@ -155,8 +166,8 @@ typedef struct {
     int           show_passed; /* also print checks that pass (--verbose) */
     const char   *test_name;   /* test currently running */
     const char   *test_file;
-    HammerCounts  test;        /* checks and failures for the current test */
-    HammerCounts  run;         /* checks and failures for all finished tests */
+    HammerCounts  test;        /* counts for the current test */
+    HammerCounts  run;         /* counts for all tests finished so far */
     int           tests_run;
     int           tests_failed;
 } HammerCtx;
@@ -170,7 +181,7 @@ typedef struct {
 typedef void (*HammerPrintFn)(const char *line);
 ```
 
-The print function is called once per complete line, and the line ends in `\n`. HammerC formats every line itself, with `vsnprintf` into a buffer of `HAMMER_LINE_MAX` (512) bytes. To send output somewhere else, such as a UART, a log file or a buffer, write a function with this signature and pass it to `run_all_tests_with`. Its second argument is `show_passed`: 1 prints every check, like `--verbose`, and 0 prints only failures.
+The print function is called once per complete line, and the line ends in `\n`. HammerC formats every line itself, with `vsnprintf` into a buffer of `HAMMER_LINE_MAX` (512) bytes on the stack. Longer lines are cut. To change the size, build with `-DHAMMER_LINE_MAX=<n>`. To send output somewhere else, such as a UART, a log file or a buffer, write a function with this signature and pass it to `run_all_tests_with`. Its second argument is `show_passed`: 1 prints every check, like `--verbose`, and 0 prints only failures.
 
 ```c
 #include "generated/hammer_tests.h"
@@ -198,7 +209,7 @@ python hammerc.py <dir> [--nomain]
 - **Checks the rules** above. Problems are printed as `file:line: error: ...`, nothing is generated, and the script exits with 1.
 - **Writes `<dir>/generated/`:**
   - `hammer_tests.h` has declarations of all tests, `HAMMER_TEST_COUNT`, the `hammer_tests` table, `run_all_tests_with(print, show_passed)` and `run_all_tests()`.
-  - `hammer_main.c` has a `main` that passes `argc` and `argv` to `hammer_main`. It returns 0 if every test passed, 1 if any failed, and 2 for an unknown argument.
+  - `hammer_main.c` has a `main` that passes `argc` and `argv` to `hammer_main`. It returns 0 if every test passed, 1 if any failed, and 2 for an unknown argument or test name.
 - **Rewrites a file only when its content changes,** so your build doesn't redo work. It prints whether each file was `written` or `unchanged`.
 - **`--nomain` skips `hammer_main.c`.** Use it when you write your own `main`. If a `hammer_main.c` is left from an earlier run, it is deleted so it can't clash with yours.
 
@@ -210,9 +221,12 @@ The script doesn't parse C. It works in three simple steps, all in `hammerc.py`:
 
 1. **Blank out** comments, string and character literals, and preprocessor lines. They are replaced with spaces, so line numbers stay correct.
 2. **Track brace depth.** Every `{` at file level whose preceding text ends in `)` and contains no `=` is a function definition. Structs, enums and initializers are skipped.
-3. **Classify** each function by its preceding text: it contains `static` (helper), it matches the test signature (test), or it is an error.
+3. **Classify** each function by its preceding text: it contains `static` (helper, or an error if it has the test signature), it matches the test signature (test), or it is an error. When looking for `static` and the name, `__attribute__((...))` and `__declspec(...)` are ignored.
 
-Functions created by macros are invisible to the script. Write tests out in full.
+Because the script doesn't run the preprocessor:
+
+- **Functions created by macros are invisible to the script.** Write tests out in full.
+- **`#if` / `#ifdef` are ignored.** A test inside `#if 0` is still put in the table, and the build then fails with an undefined reference to it. To switch a test off, comment it out or delete it.
 
 ## Requirements
 

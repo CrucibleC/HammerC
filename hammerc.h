@@ -51,8 +51,11 @@ typedef struct {
     HammerTestFn fn;
 } HammerTest;
 
-/* Longest line hammer_printf() builds, including the '\n'. Longer lines are cut. */
+/* Longest line hammer_printf() builds, including the '\n'. Longer lines are cut.
+   The buffer is on the stack; to change its size, build with -DHAMMER_LINE_MAX=<n>. */
+#ifndef HAMMER_LINE_MAX
 #define HAMMER_LINE_MAX 512
+#endif
 
 /* Default print function. Flushes so the last line before a crash is visible. */
 static inline void hammer_print_stdout(const char *line)
@@ -193,23 +196,39 @@ static inline int hammer_run(const HammerTest *tests, int count, HammerPrintFn p
 }
 
 /* The body of a test runner's main(). Reads the command line, runs the tests
-   and returns 0 if every test passed, 1 if any failed, 2 for a bad argument. */
+   and returns 0 if every test passed, 1 if any failed, 2 for a bad argument
+   or an unknown test name. */
 static inline int hammer_main(int argc, char **argv, const HammerTest *tests, int count)
 {
     int show_passed = 0;
+    const char *only = NULL; /* name of the one test to run, or NULL for all */
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-v") == 0) {
             show_passed = 1;
         } else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
-            printf("usage: %s [--verbose]\n"
-                   "  -v, --verbose  print every check, not only the failed ones\n", argv[0]);
+            printf("usage: %s [--verbose] [test_name]\n"
+                   "  -v, --verbose  print every check, not only the failed ones\n"
+                   "  test_name      run only this test, e.g. test_add_small_numbers\n", argv[0]);
             return 0;
+        } else if (argv[i][0] != '-' && only == NULL) {
+            only = argv[i];
         } else {
             fprintf(stderr, "%s: unknown argument '%s' (try --help)\n", argv[0], argv[i]);
             return 2;
         }
     }
-    return hammer_run(tests, count, hammer_print_stdout, show_passed) == 0 ? 0 : 1;
+
+    if (only == NULL) {
+        return hammer_run(tests, count, hammer_print_stdout, show_passed) == 0 ? 0 : 1;
+    }
+    /* Run a table of one row: the matching test. */
+    for (int i = 0; i < count; i++) {
+        if (strcmp(tests[i].name, only) == 0) {
+            return hammer_run(&tests[i], 1, hammer_print_stdout, show_passed) == 0 ? 0 : 1;
+        }
+    }
+    fprintf(stderr, "%s: no test named '%s'\n", argv[0], only);
+    return 2;
 }
 
 /* CHECK:   on failure, record it and keep going.
