@@ -4,6 +4,7 @@
 """hammerc.py - finds HammerC tests and generates the code that runs them.
 
 Usage: python hammerc.py <dir> [--nomain]
+       python hammerc.py --version
 
 Reads every *.test.c file under <dir> (skipping <dir>/generated) and writes:
     <dir>/generated/hammer_tests.h  declarations, the test table, run_all_tests()
@@ -23,6 +24,7 @@ import os
 import re
 import sys
 
+VERSION = "1.0.0"  # the same as HAMMERC_VERSION in hammerc.h
 GENERATED_DIR = "generated"
 TESTS_HEADER = "hammer_tests.h"
 MAIN_FILE = "hammer_main.c"
@@ -231,6 +233,7 @@ def main():
     parser = argparse.ArgumentParser(description="Generate the HammerC test runner for a folder of .test.c files.")
     parser.add_argument("dir", help="folder to search for .test.c files")
     parser.add_argument("--nomain", action="store_true", help=f"do not generate {MAIN_FILE}")
+    parser.add_argument("--version", action="version", version=f"hammerc.py {VERSION}")
     args = parser.parse_args()
 
     if not os.path.isdir(args.dir):

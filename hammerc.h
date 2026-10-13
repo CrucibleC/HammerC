@@ -17,6 +17,9 @@
 #ifndef HAMMERC_H
 #define HAMMERC_H
 
+/* The HammerC version this header belongs to. hammerc.py has the same number. */
+#define HAMMERC_VERSION "1.0.0"
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>

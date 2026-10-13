@@ -9,6 +9,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# The jobs only read the code, so the workflow's token gets no write access.
+permissions:
+  contents: read
+
 jobs:
   selftest:
     name: ${{ matrix.os }} / ${{ matrix.cc }}

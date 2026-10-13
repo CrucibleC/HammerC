@@ -16,6 +16,9 @@ an expected-output file:
    generated with hammerc.py, compiled, and run with the arguments listed in
    SUITES below. Each run must match <suite>/expected/<run>.txt.
 
+It also checks that hammerc.h, hammerc.py and the README title give the same
+version number.
+
 Before comparing, the runner's own path is replaced with <runner> and every
 backslash with '/', so the same expected files work on Linux and Windows.
 
@@ -170,6 +173,25 @@ def test_suite(suite, cc, update):
     return passed
 
 
+def test_versions_match():
+    """The version in hammerc.h, hammerc.py and the README title must be the same."""
+    patterns = {
+        "hammerc.h": r'#define HAMMERC_VERSION "([^"]+)"',
+        "hammerc.py": r'^VERSION = "([^"]+)"',
+        "README.md": r"^# HammerC V(\S+)",
+    }
+    versions = {}
+    for file, pattern in patterns.items():
+        with open(os.path.join(ROOT, file), encoding="utf-8") as f:
+            match = re.search(pattern, f.read(), re.MULTILINE)
+        versions[file] = match.group(1) if match else "(not found)"
+    if len(set(versions.values())) == 1:
+        print(f"ok       versions match ({versions['hammerc.h']})")
+        return True
+    print("FAILED   versions differ: " + ", ".join(f"{file} {v}" for file, v in versions.items()))
+    return False
+
+
 def main():
     parser = argparse.ArgumentParser(description="Test HammerC itself.")
     parser.add_argument("--cc", default="gcc", help="C compiler: gcc, clang or cl (default: gcc)")
@@ -178,6 +200,8 @@ def main():
     args = parser.parse_args()
 
     failed = []
+    if not test_versions_match():
+        failed.append("versions")
     for case in sorted(os.listdir(os.path.join(HERE, "script_cases"))):
         if not test_script_case(case, args.update):
             failed.append(f"script_cases/{case}")

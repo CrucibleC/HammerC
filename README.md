@@ -232,6 +232,7 @@ python hammerc.py <dir> [--nomain]
   - `hammer_main.c` has a `main` that passes `argc` and `argv` to `hammer_main`. It returns 0 if every test passed, 1 if any failed, and 2 for an unknown argument or test name.
 - **Rewrites a file only when its content changes,** so your build doesn't redo work. It prints whether each file was `written` or `unchanged`.
 - **`--nomain` skips `hammer_main.c`.** Use it when you write your own `main`. If a `hammer_main.c` is left from an earlier run, it is deleted so it can't clash with yours.
+- **`--version` prints the script's version.** In C, the header's version is `HAMMERC_VERSION`, a string such as `"1.0.0"`. The two always match, so a copied `hammerc.h` still shows which version it came from.
 
 Include `hammer_tests.h` in exactly one file, the one with `main`. Its contents are `static`, so including it elsewhere would only make unused copies.
 
