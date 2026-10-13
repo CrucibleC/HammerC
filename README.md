@@ -1,6 +1,6 @@
 [Part of The Crucible C Project.](https://github.com/CrucibleC/CrucibleC)
 
-# HammerC V1.0.0
+# HammerC v1.0.0
 
 [![selftest](https://github.com/CrucibleC/HammerC/actions/workflows/selftest.yml/badge.svg)](https://github.com/CrucibleC/HammerC/actions/workflows/selftest.yml)
 

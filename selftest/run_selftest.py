@@ -178,7 +178,7 @@ def test_versions_match():
     patterns = {
         "hammerc.h": r'#define HAMMERC_VERSION "([^"]+)"',
         "hammerc.py": r'^VERSION = "([^"]+)"',
-        "README.md": r"^# HammerC V(\S+)",
+        "README.md": r"^# HammerC v(\S+)",
     }
     versions = {}
     for file, pattern in patterns.items():
