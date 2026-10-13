@@ -1,0 +1,23 @@
+exit: 0
+RUN  test_eq_str_passes (eq_str_ptr.test.c)
+     PASSED:   CHECK_EQ_STR(built, "abc")
+     AT:       checks/eq_str_ptr.test.c:8
+     EXPECTED: "abc"
+     ACTUAL:   "abc"
+     PASSED:   CHECK_EQ_STR("", "")
+     AT:       checks/eq_str_ptr.test.c:9
+     EXPECTED: ""
+     ACTUAL:   ""
+     PASSED:   CHECK_EQ_STR(NULL, NULL)
+     AT:       checks/eq_str_ptr.test.c:10
+     EXPECTED: NULL
+     ACTUAL:   NULL
+     3/3 checks passed
+
+TESTS:   1
+SUCCESS: 1
+FAILED:  0
+
+CHECKS:  3
+SUCCESS: 3
+FAILED:  0

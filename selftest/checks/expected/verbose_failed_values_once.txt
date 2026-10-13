@@ -1,0 +1,19 @@
+exit: 1
+RUN  test_eq_int_fails_prints_values (eq_numbers.test.c)
+     FAILED:   CHECK_EQ_INT(-1, 1)
+     AT:       checks/eq_numbers.test.c:14
+     EXPECTED: 1
+     ACTUAL:   -1
+     FAILED:   CHECK_EQ_INT(LLONG_MAX, LLONG_MIN)
+     AT:       checks/eq_numbers.test.c:15
+     EXPECTED: -9223372036854775808
+     ACTUAL:   9223372036854775807
+     0/2 checks passed
+
+TESTS:   1
+SUCCESS: 0
+FAILED:  1
+
+CHECKS:  2
+SUCCESS: 0
+FAILED:  2

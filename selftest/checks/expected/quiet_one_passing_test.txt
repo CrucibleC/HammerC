@@ -1,0 +1,8 @@
+exit: 0
+TESTS:   1
+SUCCESS: 1
+FAILED:  0
+
+CHECKS:  2
+SUCCESS: 2
+FAILED:  0

@@ -24,6 +24,14 @@
 /* Receives one complete line of output, ending in '\n'. */
 typedef void (*HammerPrintFn)(const char *line);
 
+/* How much a run prints. Each level prints everything the one before it prints, and more. */
+typedef enum {
+    HAMMER_SILENT,  /* nothing: only the return value tells the result (--silent) */
+    HAMMER_QUIET,   /* only the tests that failed, and the summary (--quiet) */
+    HAMMER_NORMAL,  /* every test's RUN and N/M lines, failed checks, and the summary */
+    HAMMER_VERBOSE  /* also every passed check, with the values of *_EQ_* checks (--verbose) */
+} HammerOutput;
+
 typedef struct {
     int checks;   /* number of checks evaluated */
     int failures; /* number of those that failed */
@@ -33,9 +41,10 @@ typedef struct {
    and adds it into run afterwards. The check functions only touch test. */
 typedef struct {
     HammerPrintFn print;
-    int           show_passed; /* also print checks that pass (--verbose) */
+    HammerOutput  output;
     const char   *test_name;   /* test currently running */
     const char   *test_file;
+    int           test_shown;  /* 1 once the current test's RUN line is printed */
     HammerCounts  test;        /* counts for the current test */
     HammerCounts  run;         /* counts for all tests finished so far */
     int           tests_run;
@@ -78,8 +87,26 @@ static inline void hammer_printf(HammerPrintFn print, const char *format, ...)
     print(line);
 }
 
-/* Counts one check and prints its PASSED or FAILED line and its AT line.
-   A passed check is only printed when show_passed is set. Returns passed. */
+/* Prints the current test's RUN line, unless it is printed already. NORMAL and
+   VERBOSE print it before the test starts, so a crash shows which test it was.
+   QUIET prints it just before the test's first failed check. */
+static inline void hammer_show_test(HammerCtx *t)
+{
+    if (!t->test_shown) {
+        hammer_printf(t->print, "RUN  %s (%s)\n", t->test_name, t->test_file);
+        t->test_shown = 1;
+    }
+}
+
+/* 1 if a check with this result is printed: a failed one from QUIET up,
+   a passed one only in VERBOSE. */
+static inline int hammer_shows_check(const HammerCtx *t, int passed)
+{
+    return t->output >= (passed ? HAMMER_VERBOSE : HAMMER_QUIET);
+}
+
+/* Counts one check and, if it is shown, prints its PASSED or FAILED line and
+   its AT line. Returns passed. */
 static inline int hammer_check(HammerCtx *t, int passed,
                                const char *check_text, const char *file, int line)
 {
@@ -87,51 +114,51 @@ static inline int hammer_check(HammerCtx *t, int passed,
     if (!passed) {
         t->test.failures++;
     }
-    if (!passed || t->show_passed) {
+    if (hammer_shows_check(t, passed)) {
+        hammer_show_test(t);
         hammer_printf(t->print, "     %s:   %s\n", passed ? "PASSED" : "FAILED", check_text);
         hammer_printf(t->print, "     AT:       %s:%d\n", file, line);
     }
     return passed;
 }
 
-/* Returns 1 if the pointers are equal, 0 if not (and prints both values). */
+/* The *_EQ_* checks: each returns 1 if the values are equal, 0 if not, and
+   prints both values whenever the check itself is printed. */
+
 static inline int hammer_check_eq_ptr(HammerCtx *t, const void *actual, const void *expected,
                                       const char *check_text, const char *file, int line)
 {
-    if (hammer_check(t, actual == expected, check_text, file, line)) {
-        return 1;
+    int passed = hammer_check(t, actual == expected, check_text, file, line);
+    if (hammer_shows_check(t, passed)) {
+        hammer_printf(t->print, "     EXPECTED: %p\n", (void *)expected);
+        hammer_printf(t->print, "     ACTUAL:   %p\n", (void *)actual);
     }
-    hammer_printf(t->print, "     EXPECTED: %p\n", (void *)expected);
-    hammer_printf(t->print, "     ACTUAL:   %p\n", (void *)actual);
-    return 0;
+    return passed;
 }
 
-/* Returns 1 if the integers are equal, 0 if not (and prints both values). */
 static inline int hammer_check_eq_int(HammerCtx *t, long long actual, long long expected,
                                       const char *check_text, const char *file, int line)
 {
-    if (hammer_check(t, actual == expected, check_text, file, line)) {
-        return 1;
+    int passed = hammer_check(t, actual == expected, check_text, file, line);
+    if (hammer_shows_check(t, passed)) {
+        hammer_printf(t->print, "     EXPECTED: %lld\n", expected);
+        hammer_printf(t->print, "     ACTUAL:   %lld\n", actual);
     }
-    hammer_printf(t->print, "     EXPECTED: %lld\n", expected);
-    hammer_printf(t->print, "     ACTUAL:   %lld\n", actual);
-    return 0;
+    return passed;
 }
 
-/* Returns 1 if the unsigned integers are equal, 0 if not (and prints both values). */
 static inline int hammer_check_eq_uint(HammerCtx *t, unsigned long long actual, unsigned long long expected,
                                        const char *check_text, const char *file, int line)
 {
-    if (hammer_check(t, actual == expected, check_text, file, line)) {
-        return 1;
+    int passed = hammer_check(t, actual == expected, check_text, file, line);
+    if (hammer_shows_check(t, passed)) {
+        hammer_printf(t->print, "     EXPECTED: %llu\n", expected);
+        hammer_printf(t->print, "     ACTUAL:   %llu\n", actual);
     }
-    hammer_printf(t->print, "     EXPECTED: %llu\n", expected);
-    hammer_printf(t->print, "     ACTUAL:   %llu\n", actual);
-    return 0;
+    return passed;
 }
 
-/* Returns 1 if the strings are equal, 0 if not (and prints both values).
-   Two NULLs are equal; NULL and a string are not. */
+/* Two NULLs are equal; NULL and a string are not. */
 static inline int hammer_check_eq_str(HammerCtx *t, const char *actual, const char *expected,
                                       const char *check_text, const char *file, int line)
 {
@@ -141,42 +168,47 @@ static inline int hammer_check_eq_str(HammerCtx *t, const char *actual, const ch
     } else {
         equal = strcmp(actual, expected) == 0;
     }
-    if (hammer_check(t, equal, check_text, file, line)) {
-        return 1;
+    int passed = hammer_check(t, equal, check_text, file, line);
+    if (hammer_shows_check(t, passed)) {
+        /* A string is printed in quotes, NULL is printed as NULL. */
+        if (expected) {
+            hammer_printf(t->print, "     EXPECTED: \"%s\"\n", expected);
+        } else {
+            hammer_printf(t->print, "     EXPECTED: NULL\n");
+        }
+        if (actual) {
+            hammer_printf(t->print, "     ACTUAL:   \"%s\"\n", actual);
+        } else {
+            hammer_printf(t->print, "     ACTUAL:   NULL\n");
+        }
     }
-    /* A string is printed in quotes, NULL is printed as NULL. */
-    if (expected) {
-        hammer_printf(t->print, "     EXPECTED: \"%s\"\n", expected);
-    } else {
-        hammer_printf(t->print, "     EXPECTED: NULL\n");
-    }
-    if (actual) {
-        hammer_printf(t->print, "     ACTUAL:   \"%s\"\n", actual);
-    } else {
-        hammer_printf(t->print, "     ACTUAL:   NULL\n");
-    }
-    return 0;
+    return passed;
 }
 
-/* Runs every test in the table and prints a summary. Returns the number of failed tests.
-   show_passed: 1 prints every check, 0 prints only failed checks. */
-static inline int hammer_run(const HammerTest *tests, int count, HammerPrintFn print, int show_passed)
+/* Runs every test in the table and prints what output asks for.
+   Returns the number of failed tests. */
+static inline int hammer_run(const HammerTest *tests, int count, HammerPrintFn print, HammerOutput output)
 {
     HammerCtx t = {0};
     t.print = print;
-    t.show_passed = show_passed;
+    t.output = output;
 
     for (int i = 0; i < count; i++) {
         t.test_name = tests[i].name;
         t.test_file = tests[i].file;
+        t.test_shown = 0;
         t.test.checks = 0;
         t.test.failures = 0;
 
-        hammer_printf(print, "RUN  %s (%s)\n", t.test_name, t.test_file);
+        if (output >= HAMMER_NORMAL) {
+            hammer_show_test(&t);
+        }
         tests[i].fn(&t);
-        hammer_printf(print, "     %d/%d checks passed\n",
-                      t.test.checks - t.test.failures, t.test.checks);
-        hammer_printf(print, "\n");
+        if (t.test_shown) { /* QUIET only shows a test once it has failed */
+            hammer_printf(print, "     %d/%d checks passed\n",
+                          t.test.checks - t.test.failures, t.test.checks);
+            hammer_printf(print, "\n");
+        }
 
         t.run.checks += t.test.checks;
         t.run.failures += t.test.failures;
@@ -186,13 +218,15 @@ static inline int hammer_run(const HammerTest *tests, int count, HammerPrintFn p
         }
     }
 
-    hammer_printf(print, "TESTS:   %d\n", t.tests_run);
-    hammer_printf(print, "SUCCESS: %d\n", t.tests_run - t.tests_failed);
-    hammer_printf(print, "FAILED:  %d\n", t.tests_failed);
-    hammer_printf(print, "\n");
-    hammer_printf(print, "CHECKS:  %d\n", t.run.checks);
-    hammer_printf(print, "SUCCESS: %d\n", t.run.checks - t.run.failures);
-    hammer_printf(print, "FAILED:  %d\n", t.run.failures);
+    if (output >= HAMMER_QUIET) {
+        hammer_printf(print, "TESTS:   %d\n", t.tests_run);
+        hammer_printf(print, "SUCCESS: %d\n", t.tests_run - t.tests_failed);
+        hammer_printf(print, "FAILED:  %d\n", t.tests_failed);
+        hammer_printf(print, "\n");
+        hammer_printf(print, "CHECKS:  %d\n", t.run.checks);
+        hammer_printf(print, "SUCCESS: %d\n", t.run.checks - t.run.failures);
+        hammer_printf(print, "FAILED:  %d\n", t.run.failures);
+    }
     return t.tests_failed;
 }
 
@@ -201,15 +235,23 @@ static inline int hammer_run(const HammerTest *tests, int count, HammerPrintFn p
    or an unknown test name. */
 static inline int hammer_main(int argc, char **argv, const HammerTest *tests, int count)
 {
-    int show_passed = 0;
-    const char *only = NULL; /* name of the one test to run, or NULL for all */
+    HammerOutput output = HAMMER_NORMAL; /* if several are given, the last one counts */
+    const char *only = NULL;             /* name of the one test to run, or NULL for all */
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-v") == 0) {
-            show_passed = 1;
+            output = HAMMER_VERBOSE;
+        } else if (strcmp(argv[i], "--quiet") == 0 || strcmp(argv[i], "-q") == 0) {
+            output = HAMMER_QUIET;
+        } else if (strcmp(argv[i], "--silent") == 0 || strcmp(argv[i], "-s") == 0) {
+            output = HAMMER_SILENT;
         } else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
-            printf("usage: %s [--verbose] [test_name]\n"
-                   "  -v, --verbose  print every check, not only the failed ones\n"
-                   "  test_name      run only this test, e.g. test_add_small_numbers\n", argv[0]);
+            printf("usage: %s [--verbose | --quiet | --silent] [test_name]\n"
+                   "  -v, --verbose  also print passed checks, with the values of *_EQ_* checks\n"
+                   "  -q, --quiet    print only the tests that failed, and the summary\n"
+                   "  -s, --silent   print nothing; the exit code tells the result\n"
+                   "  test_name      run only this test, e.g. test_add_small_numbers\n"
+                   "exit code: 0 if every test passed, 1 if any failed, 2 for a bad argument\n",
+                   argv[0]);
             return 0;
         } else if (argv[i][0] != '-' && only == NULL) {
             only = argv[i];
@@ -220,12 +262,12 @@ static inline int hammer_main(int argc, char **argv, const HammerTest *tests, in
     }
 
     if (only == NULL) {
-        return hammer_run(tests, count, hammer_print_stdout, show_passed) == 0 ? 0 : 1;
+        return hammer_run(tests, count, hammer_print_stdout, output) == 0 ? 0 : 1;
     }
     /* Run a table of one row: the matching test. */
     for (int i = 0; i < count; i++) {
         if (strcmp(tests[i].name, only) == 0) {
-            return hammer_run(&tests[i], 1, hammer_print_stdout, show_passed) == 0 ? 0 : 1;
+            return hammer_run(&tests[i], 1, hammer_print_stdout, output) == 0 ? 0 : 1;
         }
     }
     fprintf(stderr, "%s: no test named '%s'\n", argv[0], only);

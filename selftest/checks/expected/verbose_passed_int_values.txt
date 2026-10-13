@@ -1,0 +1,23 @@
+exit: 0
+RUN  test_eq_int_passes (eq_numbers.test.c)
+     PASSED:   CHECK_EQ_INT(-5, -5)
+     AT:       checks/eq_numbers.test.c:7
+     EXPECTED: -5
+     ACTUAL:   -5
+     PASSED:   CHECK_EQ_INT(LLONG_MIN, LLONG_MIN)
+     AT:       checks/eq_numbers.test.c:8
+     EXPECTED: -9223372036854775808
+     ACTUAL:   -9223372036854775808
+     PASSED:   CHECK_EQ_INT('A', 65)
+     AT:       checks/eq_numbers.test.c:9
+     EXPECTED: 65
+     ACTUAL:   65
+     3/3 checks passed
+
+TESTS:   1
+SUCCESS: 1
+FAILED:  0
+
+CHECKS:  3
+SUCCESS: 3
+FAILED:  0

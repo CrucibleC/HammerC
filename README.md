@@ -123,29 +123,44 @@ SUCCESS: 41
 FAILED:  5
 ```
 
-- **Passing checks print nothing,** unless the runner is started with `--verbose` (see below).
+This is the default output. `--verbose`, `--quiet` and `--silent` print more or less (see [Output levels](#output-levels)).
+
+- **Passing checks print nothing.**
 - **Each failure is printed under its test's `RUN` line.** `FAILED:` shows the check as written in the source, and `AT:` shows `file:line`, which editors and terminals make clickable. The file is the path the compiler was given.
 - **The `*_EQ_*` checks also print `EXPECTED:` and `ACTUAL:`** with both values.
 - **A `RUN` line is printed before each test,** and the default print function flushes after every line. If a test crashes, the last `RUN` line names it.
 - **After each test, a line shows how many of its checks passed,** followed by a blank line. Checks skipped because a `REQUIRE` stopped the test are not counted.
 - **The summary comes last,** with test and check totals. The runner's exit code is 0 if every test passed and 1 otherwise.
 
-### Showing passing checks
+### Output levels
+
+Each level prints everything the level below it prints, and more:
+
+| Option | Prints | `HammerOutput` |
+|---|---|---|
+| `-s`, `--silent` | nothing; only the exit code tells the result | `HAMMER_SILENT` |
+| `-q`, `--quiet` | only the tests that failed, and the summary | `HAMMER_QUIET` |
+| *(none)* | every test's `RUN` and `N/M` lines, failed checks, and the summary | `HAMMER_NORMAL` |
+| `-v`, `--verbose` | also every passed check, with the values of `*_EQ_*` checks | `HAMMER_VERBOSE` |
+
+If several are given, the last one counts. The exit code is the same at every level: 0 if every test passed, 1 if any failed.
+
+`--verbose` prints a passed check the same way as a failed one, values included:
 
 ```
-./example_tests --verbose
-```
-
-`--verbose` (or `-v`) also prints every check that passes, with the same `AT:` line as a failure:
-
-```
-RUN  test_add_small_numbers (calc.test.c)
-     PASSED:   CHECK(calc_add(2, 2) == 4)
-     AT:       example/calc.test.c:12
-     PASSED:   CHECK(calc_add(-3, 3) == 0)
-     AT:       example/calc.test.c:13
+RUN  test_abs_of_negative (eq/numbers.test.c)
+     PASSED:   CHECK_EQ_INT(abs(-7), 7)
+     AT:       example/eq/numbers.test.c:8
+     EXPECTED: 7
+     ACTUAL:   7
+     PASSED:   CHECK_EQ_INT(abs(0), 0)
+     AT:       example/eq/numbers.test.c:9
+     EXPECTED: 0
+     ACTUAL:   0
      2/2 checks passed
 ```
+
+`--quiet` leaves out the tests that passed. A failed test looks exactly as it does by default, but its `RUN` line is printed just before its first failure, not before the test starts. So **if a test crashes, `--quiet` can't show which test it was.** Rerun without `--quiet` to find out.
 
 ### Running one test
 
@@ -154,7 +169,7 @@ RUN  test_add_small_numbers (calc.test.c)
 ./example_tests --verbose test_file_extension
 ```
 
-Give a test's name to run only that test. The summary then counts just that one test. A name that matches no test prints an error and the runner exits with 2.
+Give a test's name to run only that test. It works with any output level. The summary then counts just that one test. A name that matches no test prints an error and the runner exits with 2.
 
 `--help` (or `-h`) prints the usage. Any other argument prints an error and the runner exits with 2. The command line is read by `hammer_main` in `hammerc.h`, which the generated `main` calls.
 
@@ -165,9 +180,10 @@ Give a test's name to run only that test. The summary then counts just that one 
 ```c
 typedef struct {
     HammerPrintFn print;
-    int           show_passed; /* also print checks that pass (--verbose) */
+    HammerOutput  output;
     const char   *test_name;   /* test currently running */
     const char   *test_file;
+    int           test_shown;  /* 1 once the current test's RUN line is printed */
     HammerCounts  test;        /* counts for the current test */
     HammerCounts  run;         /* counts for all tests finished so far */
     int           tests_run;
@@ -175,7 +191,9 @@ typedef struct {
 } HammerCtx;
 ```
 
-`hammer_run` goes through the generated table. For each test it sets the name and file, zeroes `test`, prints the `RUN` line and calls the test. Afterwards it prints how many of the test's checks passed, adds `test` into `run` and updates `tests_run` and `tests_failed`. The check functions only touch `test`, so `hammer_run` is the one place where the totals change.
+`hammer_run` goes through the generated table. For each test it sets the name and file, zeroes `test`, prints the `RUN` line (at `HAMMER_NORMAL` and up) and calls the test. Afterwards, if the test was shown, it prints how many of the test's checks passed. Then it adds `test` into `run` and updates `tests_run` and `tests_failed`.
+
+Whether a check is printed is decided in one place, `hammer_shows_check`: a failed check from `HAMMER_QUIET` up, a passed check only at `HAMMER_VERBOSE`. The first check printed for a test also prints its `RUN` line if that hasn't happened yet, which is how `--quiet` names a failed test. The check functions only touch `test`, so `hammer_run` is the one place where the totals change.
 
 ## Printing
 
@@ -183,7 +201,7 @@ typedef struct {
 typedef void (*HammerPrintFn)(const char *line);
 ```
 
-The print function is called once per complete line, and the line ends in `\n`. HammerC formats every line itself, with `vsnprintf` into a buffer of `HAMMER_LINE_MAX` (512) bytes on the stack. Longer lines are cut. To change the size, build with `-DHAMMER_LINE_MAX=<n>`. To send output somewhere else, such as a UART, a log file or a buffer, write a function with this signature and pass it to `run_all_tests_with`. Its second argument is `show_passed`: 1 prints every check, like `--verbose`, and 0 prints only failures.
+The print function is called once per complete line, and the line ends in `\n`. HammerC formats every line itself, with `vsnprintf` into a buffer of `HAMMER_LINE_MAX` (512) bytes on the stack. Longer lines are cut. To change the size, build with `-DHAMMER_LINE_MAX=<n>`. To send output somewhere else, such as a UART, a log file or a buffer, write a function with this signature and pass it to `run_all_tests_with`. Its second argument is the [output level](#output-levels), and it returns the number of failed tests.
 
 ```c
 #include "generated/hammer_tests.h"
@@ -195,11 +213,11 @@ static void print_to_uart(const char *line)
 
 int main(void)
 {
-    return run_all_tests_with(print_to_uart, 0) == 0 ? 0 : 1;
+    return run_all_tests_with(print_to_uart, HAMMER_NORMAL) == 0 ? 0 : 1;
 }
 ```
 
-`run_all_tests()` is the same as `run_all_tests_with(hammer_print_stdout, 0)`. `hammer_print_stdout` writes to stdout and flushes.
+`run_all_tests()` is the same as `run_all_tests_with(hammer_print_stdout, HAMMER_NORMAL)`. `hammer_print_stdout` writes to stdout and flushes.
 
 ## hammerc.py
 
@@ -210,7 +228,7 @@ python hammerc.py <dir> [--nomain]
 - **Finds tests** in every `*.test.c` file under `<dir>`, including subfolders and skipping `<dir>/generated/`. Files are sorted by path, and tests keep their order within each file.
 - **Checks the rules** above. Problems are printed as `file:line: error: ...`, nothing is generated, and the script exits with 1.
 - **Writes `<dir>/generated/`:**
-  - `hammer_tests.h` has declarations of all tests, `HAMMER_TEST_COUNT`, the `hammer_tests` table, `run_all_tests_with(print, show_passed)` and `run_all_tests()`.
+  - `hammer_tests.h` has declarations of all tests, `HAMMER_TEST_COUNT`, the `hammer_tests` table, `run_all_tests_with(print, output)` and `run_all_tests()`.
   - `hammer_main.c` has a `main` that passes `argc` and `argv` to `hammer_main`. It returns 0 if every test passed, 1 if any failed, and 2 for an unknown argument or test name.
 - **Rewrites a file only when its content changes,** so your build doesn't redo work. It prints whether each file was `written` or `unchanged`.
 - **`--nomain` skips `hammer_main.c`.** Use it when you write your own `main`. If a `hammer_main.c` is left from an earlier run, it is deleted so it can't clash with yours.
@@ -239,7 +257,7 @@ python selftest/run_selftest.py --cc gcc      # or clang, or cl (MSVC)
 ```
 
 - **`selftest/script_cases/`** has one folder per `hammerc.py` rule. Each holds `.test.c` files and an `expected.txt` with the script's exit code, its output and the tests it put in the table.
-- **`selftest/checks/`** is a suite that runs every check macro, passing and failing. It is run with no arguments, with `--verbose`, with one test name, and with bad arguments.
+- **`selftest/checks/`** is a suite that runs every check macro, passing and failing. It is run at every output level, with one test name, and with bad arguments.
 - **`selftest/custom_print/`** has its own `main` (`--nomain`) and a print function that stores every line. It checks that each call gets exactly one complete line, and it is built with `-DHAMMER_LINE_MAX=64` so long lines are cut.
 
 Each run's output is compared with a file in an `expected/` folder, and any difference is printed as a diff. The runner's own path is shown as `<runner>`, and backslashes are turned into `/`, so the same files work on Linux and Windows. Failing pointer checks print addresses, which change every run, so `custom_print` hides them.

@@ -28,7 +28,7 @@ static void store_line(const char *line)
 
 int main(void)
 {
-    int failed = run_all_tests_with(store_line, 0);
+    int failed = run_all_tests_with(store_line, HAMMER_NORMAL);
 
     printf("run_all_tests_with returned %d\n", failed);
     printf("lines: %d, bad lines: %d\n", line_count, bad_lines);

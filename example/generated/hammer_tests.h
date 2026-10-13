@@ -45,15 +45,16 @@ static const HammerTest hammer_tests[HAMMER_TEST_COUNT] = {
     { "test_require_stops_on_purpose", "pointers.test.c", test_require_stops_on_purpose },
 };
 
-/* show_passed: 1 prints every check, 0 prints only failed checks. */
-static inline int run_all_tests_with(HammerPrintFn print, int show_passed)
+/* Returns the number of failed tests. output: HAMMER_SILENT, HAMMER_QUIET,
+   HAMMER_NORMAL or HAMMER_VERBOSE (see hammerc.h). */
+static inline int run_all_tests_with(HammerPrintFn print, HammerOutput output)
 {
-    return hammer_run(hammer_tests, HAMMER_TEST_COUNT, print, show_passed);
+    return hammer_run(hammer_tests, HAMMER_TEST_COUNT, print, output);
 }
 
 static inline int run_all_tests(void)
 {
-    return run_all_tests_with(hammer_print_stdout, 0);
+    return run_all_tests_with(hammer_print_stdout, HAMMER_NORMAL);
 }
 
 #endif

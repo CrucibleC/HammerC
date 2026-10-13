@@ -1,4 +1,7 @@
 exit: 0
-usage: <runner> [--verbose] [test_name]
-  -v, --verbose  print every check, not only the failed ones
+usage: <runner> [--verbose | --quiet | --silent] [test_name]
+  -v, --verbose  also print passed checks, with the values of *_EQ_* checks
+  -q, --quiet    print only the tests that failed, and the summary
+  -s, --silent   print nothing; the exit code tells the result
   test_name      run only this test, e.g. test_add_small_numbers
+exit code: 0 if every test passed, 1 if any failed, 2 for a bad argument

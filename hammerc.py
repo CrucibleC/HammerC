@@ -189,15 +189,16 @@ def tests_header(files):
     lines.append("};\n")
 
     lines.append("\n"
-                 "/* show_passed: 1 prints every check, 0 prints only failed checks. */\n"
-                 "static inline int run_all_tests_with(HammerPrintFn print, int show_passed)\n"
+                 "/* Returns the number of failed tests. output: HAMMER_SILENT, HAMMER_QUIET,\n"
+                 "   HAMMER_NORMAL or HAMMER_VERBOSE (see hammerc.h). */\n"
+                 "static inline int run_all_tests_with(HammerPrintFn print, HammerOutput output)\n"
                  "{\n"
-                 "    return hammer_run(hammer_tests, HAMMER_TEST_COUNT, print, show_passed);\n"
+                 "    return hammer_run(hammer_tests, HAMMER_TEST_COUNT, print, output);\n"
                  "}\n"
                  "\n"
                  "static inline int run_all_tests(void)\n"
                  "{\n"
-                 "    return run_all_tests_with(hammer_print_stdout, 0);\n"
+                 "    return run_all_tests_with(hammer_print_stdout, HAMMER_NORMAL);\n"
                  "}\n"
                  "\n"
                  "#endif\n")
